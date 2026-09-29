@@ -10,8 +10,11 @@ public static class DbInitializer
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        const int maxRetries = 10;
-        var delay = TimeSpan.FromSeconds(3);
+        bool isContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+        int maxRetries = isContainer ? 10 : 2;
+        var delay = TimeSpan.FromSeconds(isContainer ? 3 : 1);
+
+        bool migrationSucceeded = false;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
@@ -20,6 +23,7 @@ public static class DbInitializer
                 logger.LogInformation("Attempting database migration (attempt {Attempt}/{MaxRetries})...", attempt, maxRetries);
                 await context.Database.MigrateAsync();
                 logger.LogInformation("Database migration completed successfully.");
+                migrationSucceeded = true;
                 break;
             }
             catch (Exception ex)
@@ -27,11 +31,18 @@ public static class DbInitializer
                 logger.LogWarning(ex, "Database migration failed on attempt {Attempt}/{MaxRetries}. Retrying in {Delay}s...", attempt, maxRetries, delay.TotalSeconds);
                 if (attempt == maxRetries)
                 {
-                    logger.LogError(ex, "Database migration failed after {MaxRetries} attempts.", maxRetries);
-                    throw;
+                    logger.LogWarning("⚠️ Could not connect to SQL Server after {MaxRetries} attempts. If you are debugging locally in Visual Studio, ensure the database container is started using: 'docker compose up -d db'. The API will continue running.", maxRetries);
                 }
-                await Task.Delay(delay);
+                else
+                {
+                    await Task.Delay(delay);
+                }
             }
+        }
+
+        if (!migrationSucceeded)
+        {
+            return;
         }
 
         // Seed data if database is empty
