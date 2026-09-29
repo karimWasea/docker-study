@@ -33,6 +33,11 @@ app.MapGet("/api/info", () => Results.Ok(new
 .WithName("GetSystemInfo")
 .WithOpenApi();
 
+app.MapGet("/greet", () => 
+    $"Hello, {Environment.GetEnvironmentVariable("APP_GREETING") ?? "World"}! Running in {app.Environment.EnvironmentName} mode.")
+.WithName("GetGreeting")
+.WithOpenApi();
+
 // Weather Forecast endpoint
 var summaries = new[]
 {
