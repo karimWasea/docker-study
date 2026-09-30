@@ -1,3 +1,4 @@
+using Lab5.Application.Auth;
 using Lab5.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,7 +64,8 @@ public static class DashboardEndpoints
         })
         .WithName("GetEcommerceDashboardStats")
         .WithSummary("Get e-commerce metrics: revenue, order volume, status breakdown and top buyers")
-        .WithOpenApi();
+        .WithOpenApi()
+        .RequireAuthorization(AuthPolicies.Admin);
 
         return group;
     }

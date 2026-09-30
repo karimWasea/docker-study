@@ -1,4 +1,5 @@
 using Lab5.Domain.Entities;
+using Lab5.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -63,6 +64,15 @@ public static class DbInitializer
         if (!initSucceeded)
         {
             return;
+        }
+
+        try
+        {
+            await IdentitySeeder.SeedAsync(scope.ServiceProvider, logger);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Identity seed skipped: {Message}", ex.Message);
         }
 
         // Seed data if database is empty
@@ -155,6 +165,52 @@ public static class DbInitializer
             logger.LogInformation(
                 "Database already seeded — {CustomerCount} customers, {OrderCount} orders found.",
                 customerCount, orderCount);
+        }
+
+        // Seed Categories and Products if empty
+        try
+        {
+            if (!await context.Categories.AnyAsync())
+            {
+                logger.LogInformation("Seeding initial Categories and Products...");
+
+                var electronics = new Category("Electronics", "Gadgets, audio, computing and smart devices");
+                electronics.AddProduct("Wireless Noise-Cancelling Headphones", "High fidelity over-ear Bluetooth headphones with 30h battery", 199.99m, 45, "ELEC-HEAD-01");
+                electronics.AddProduct("Mechanical Gaming Keyboard", "RGB backlit keyboard with tactile blue switches", 79.99m, 80, "ELEC-KEYB-02");
+                electronics.AddProduct("Ultra-Fast 1TB Portable SSD", "USB 3.2 Gen 2 external solid-state drive with 1050MB/s", 119.50m, 60, "ELEC-SSD-03");
+                electronics.AddProduct("27-inch 4K UHD IPS Monitor", "144Hz refresh rate with HDR 400 support and USB-C", 349.00m, 25, "ELEC-MON-04");
+
+                var homeOffice = new Category("Home & Office", "Ergonomic furniture, lighting and desk accessories");
+                homeOffice.AddProduct("Motorized Standing Desk", "Dual-motor electric height adjustable standing desk 55x28", 420.00m, 15, "HOME-DESK-01");
+                homeOffice.AddProduct("Ergonomic Mesh Office Chair", "Breathable mesh back with adjustable 3D armrests", 249.90m, 30, "HOME-CHAIR-02");
+                homeOffice.AddProduct("Smart LED Desk Lamp", "Dimmable desk lamp with wireless smartphone charging base", 45.00m, 100, "HOME-LAMP-03");
+
+                var books = new Category("Books", "Technical, architectural and computer science literature");
+                books.AddProduct("Clean Architecture by Robert C. Martin", "A craftsman's guide to software structure and design", 39.99m, 120, "BOOK-ARCH-01");
+                books.AddProduct("Domain-Driven Design by Eric Evans", "Tackling complexity in the heart of software", 49.99m, 50, "BOOK-DDD-02");
+                books.AddProduct("Designing Data-Intensive Applications", "The big ideas behind reliable, scalable systems", 44.50m, 90, "BOOK-DDIA-03");
+
+                var fitness = new Category("Fitness & Lifestyle", "Workout equipment, wearables and active gear");
+                fitness.AddProduct("Smart Fitness Watch", "Heart rate monitor with GPS tracking and 7-day battery", 159.00m, 40, "FIT-WATCH-01");
+                fitness.AddProduct("Resistance Bands Training Set", "5 stackable resistance tubes with handles and door anchor", 29.99m, 150, "FIT-BAND-02");
+
+                await context.Categories.AddRangeAsync(electronics, homeOffice, books, fitness);
+                await context.SaveChangesAsync();
+
+                var catCount = await context.Categories.CountAsync();
+                var prodCount = await context.Products.CountAsync();
+                logger.LogInformation("✅ Seeded {CategoryCount} categories and {ProductCount} products.", catCount, prodCount);
+            }
+            else
+            {
+                var catCount = await context.Categories.CountAsync();
+                var prodCount = await context.Products.CountAsync();
+                logger.LogInformation("Categories and products already seeded — {CategoryCount} categories, {ProductCount} products found.", catCount, prodCount);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not seed categories/products: {Message}", ex.Message);
         }
     }
 
