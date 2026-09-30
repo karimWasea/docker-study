@@ -1,3 +1,8 @@
+## Environment & Secrets (NEVER COMMIT SENSITIVE VALUES)
+.env
+.env.*
+!.env.example
+
 ## Build and restore artifacts
 [Bb]in/
 [Oo]bj/
