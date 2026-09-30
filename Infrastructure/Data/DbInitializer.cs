@@ -1,5 +1,7 @@
 using Lab5.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Lab5.Infrastructure.Data;
 
@@ -11,27 +13,45 @@ public static class DbInitializer
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         bool isContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-        int maxRetries = isContainer ? 10 : 2;
-        var delay = TimeSpan.FromSeconds(isContainer ? 3 : 1);
+        int maxRetries = isContainer ? 5 : 2;
+        var delay = TimeSpan.FromSeconds(isContainer ? 2 : 1);
 
-        bool migrationSucceeded = false;
+        bool initSucceeded = false;
+        var provider = context.Database.ProviderName ?? "Unknown";
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
-                logger.LogInformation("Attempting database migration (attempt {Attempt}/{MaxRetries})...", attempt, maxRetries);
-                await context.Database.MigrateAsync();
-                logger.LogInformation("Database migration completed successfully.");
-                migrationSucceeded = true;
+                logger.LogInformation("Attempting database schema initialization with provider {Provider} (attempt {Attempt}/{MaxRetries})...", provider, attempt, maxRetries);
+
+                if (context.Database.IsSqlServer())
+                {
+                    try
+                    {
+                        await context.Database.MigrateAsync();
+                    }
+                    catch
+                    {
+                        await EnsureRelationalTablesCreatedAsync(context, logger);
+                    }
+                }
+                else
+                {
+                    // PostgreSQL / SQLite: create tables directly from model definitions
+                    await EnsureRelationalTablesCreatedAsync(context, logger);
+                }
+
+                logger.LogInformation("Database schema initialized successfully.");
+                initSucceeded = true;
                 break;
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Database migration failed on attempt {Attempt}/{MaxRetries}. Retrying in {Delay}s...", attempt, maxRetries, delay.TotalSeconds);
+                logger.LogWarning(ex, "Database schema initialization failed on attempt {Attempt}/{MaxRetries}: {Message}. Retrying in {Delay}s...", attempt, maxRetries, ex.Message, delay.TotalSeconds);
                 if (attempt == maxRetries)
                 {
-                    logger.LogWarning("⚠️ Could not connect to SQL Server after {MaxRetries} attempts. If you are debugging locally in Visual Studio, ensure the database container is started using: 'docker compose up -d db'. The API will continue running.", maxRetries);
+                    logger.LogWarning("⚠️ Could not initialize database after {MaxRetries} attempts. The API will continue running.", maxRetries);
                 }
                 else
                 {
@@ -40,7 +60,7 @@ public static class DbInitializer
             }
         }
 
-        if (!migrationSucceeded)
+        if (!initSucceeded)
         {
             return;
         }
@@ -101,20 +121,21 @@ public static class DbInitializer
             await context.SaveChangesAsync();
 
             // Mark a few orders with different statuses for realistic data
-            var completedOrders = await context.Orders
+            var allOrders = await context.Orders.ToListAsync();
+            var completedOrders = allOrders
                 .Where(o => o.TotalAmount > 200m)
                 .OrderByDescending(o => o.TotalAmount)
                 .Take(5)
-                .ToListAsync();
+                .ToList();
 
             foreach (var order in completedOrders)
                 order.MarkCompleted();
 
-            var cancelledOrders = await context.Orders
+            var cancelledOrders = allOrders
                 .Where(o => o.TotalAmount < 50m)
                 .OrderBy(o => o.TotalAmount)
                 .Take(2)
-                .ToListAsync();
+                .ToList();
 
             foreach (var order in cancelledOrders)
                 order.Cancel();
@@ -136,4 +157,28 @@ public static class DbInitializer
                 customerCount, orderCount);
         }
     }
+
+    private static async Task EnsureRelationalTablesCreatedAsync(AppDbContext context, ILogger logger)
+    {
+        var databaseCreator = context.Database.GetService<IDatabaseCreator>() as IRelationalDatabaseCreator;
+        if (databaseCreator != null)
+        {
+            if (!await databaseCreator.ExistsAsync())
+            {
+                logger.LogInformation("Database does not exist. Creating database...");
+                await databaseCreator.CreateAsync();
+            }
+
+            if (!await databaseCreator.HasTablesAsync())
+            {
+                logger.LogInformation("Creating database tables from entity models...");
+                await databaseCreator.CreateTablesAsync();
+            }
+        }
+        else
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+    }
 }
+
