@@ -1,3 +1,4 @@
+using Lab5.Application.Auth;
 using Lab5.Domain.Entities;
 using Lab5.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +40,8 @@ public static class CustomerEndpoints
         })
         .WithName("GetAllCustomers")
         .WithSummary("Get all customers with their order stats")
-        .WithOpenApi();
+        .WithOpenApi()
+        .RequireAuthorization();
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db) =>
         {
@@ -76,7 +78,8 @@ public static class CustomerEndpoints
         })
         .WithName("GetCustomerById")
         .WithSummary("Get customer by ID with full order history")
-        .WithOpenApi();
+        .WithOpenApi()
+        .RequireAuthorization();
 
         group.MapPost("/", async (CreateCustomerRequest request, AppDbContext db) =>
         {
@@ -110,7 +113,8 @@ public static class CustomerEndpoints
         })
         .WithName("CreateCustomer")
         .WithSummary("Create a new customer")
-        .WithOpenApi();
+        .WithOpenApi()
+        .RequireAuthorization(AuthPolicies.Admin);
 
         return group;
     }
