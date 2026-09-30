@@ -1,0 +1,42 @@
+# ============================================================
+# 🔄 CI Pipeline — GitHub Actions
+# ============================================================
+# This workflow runs automatically on every push/PR to main.
+# It validates the code compiles and the Docker image builds.
+# ============================================================
+
+name: CI Pipeline
+
+# ── When does this pipeline run? ──
+on:
+  push:
+    branches: [ main ]        # Runs when code is pushed to main
+  pull_request:
+    branches: [ main ]        # Runs when a PR targets main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest    # GitHub gives us a fresh Ubuntu VM
+
+    steps:
+      # ── Step 1: Download your code ──
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # ── Step 2: Install .NET 8 SDK ──
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # ── Step 3: Download NuGet packages ──
+      - name: 📦 Restore dependencies
+        run: dotnet restore
+
+      # ── Step 4: Compile the project ──
+      - name: 🔨 Build
+        run: dotnet build --no-restore --configuration Release
+
+      # ── Step 5: Build Docker image ──
+      - name: 🐳 Build Docker image
+        run: docker build -t lab8-api:ci .
