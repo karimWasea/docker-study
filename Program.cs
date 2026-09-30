@@ -139,9 +139,10 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-// Customer and Order DDD Endpoints
+// Customer, Order and Dashboard DDD Endpoints
 app.MapCustomerEndpoints();
 app.MapOrderEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();
 
