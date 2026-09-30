@@ -8,7 +8,8 @@ services:
       APP_GREETING: "Hello from Compose"
       ConnectionStrings__Default: "Server=db,1433;Database=AppDb;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - backend
 
@@ -24,6 +25,12 @@ services:
       - sql_data:/var/opt/mssql
     networks:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Pass123' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   sql_data:

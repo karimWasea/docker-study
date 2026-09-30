@@ -9,4 +9,4 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /out .
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "lab5.dll"]
+ENTRYPOINT ["dotnet", "lab8.dll"]

@@ -55,6 +55,19 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Database migration skipped/fallback: {Message}", ex.Message);
+    }
+}
+
 // Run database schema creation and seed data
 await DbInitializer.InitializeDatabaseAsync(app.Services, app.Logger);
 
