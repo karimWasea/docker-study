@@ -230,6 +230,32 @@ public static class DbInitializer
                 logger.LogInformation("Creating database tables from entity models...");
                 await databaseCreator.CreateTablesAsync();
             }
+            else
+            {
+                // Ensure all tables exist across all providers
+                try
+                {
+                    var script = databaseCreator.GenerateCreateScript();
+                    var commands = script.Split(new[] { ";\r\n", ";\n", ";\r" }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var cmd in commands)
+                    {
+                        var trimmed = cmd.Trim();
+                        if (string.IsNullOrWhiteSpace(trimmed)) continue;
+                        try
+                        {
+                            await context.Database.ExecuteSqlRawAsync(trimmed + ";");
+                        }
+                        catch
+                        {
+                            // Table/index already exists, ignore
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Table generation info: {Message}", ex.Message);
+                }
+            }
         }
         else
         {
