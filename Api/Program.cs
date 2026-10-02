@@ -12,6 +12,13 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+});
+
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -25,12 +32,6 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
-    });
-    builder.Logging.ClearProviders();
-    builder.Logging.AddJsonConsole(options =>
-    {
-        options.IncludeScopes = true;
-        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
