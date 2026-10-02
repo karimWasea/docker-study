@@ -3,6 +3,14 @@
 .env.*
 !.env.example
 
+## Frontend (Angular / Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+node_modules/
+dist/
+.angular/
+
 ## Build and restore artifacts
 [Bb]in/
 [Oo]bj/

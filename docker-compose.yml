@@ -1,9 +1,27 @@
 services:
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    networks:
+      - backend
+    mem_limit: 128m
+    cpus: 0.3
+    restart: unless-stopped
+
   api:
     build: .
     container_name: api
     ports:
       - "8080:8080"
+    environment:
+      APP_GREETING: "Hello from Compose"
+      ConnectionStrings__Default: "Server=db,1433;Database=AppDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY:-DEV_ONLY_change_this_jwt_signing_key_min_32_chars}"
+      Identity__AdminPassword: "${ADMIN_PASSWORD:-Admin#12345}"
     depends_on:
       db:
         condition: service_healthy

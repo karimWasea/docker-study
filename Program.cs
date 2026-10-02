@@ -45,6 +45,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 builder.Services.AddProblemDetails();
 
+// Enable CORS for Angular frontend running on port 4200
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Auto-detect database provider:
 //   1. Railway / Cloud PostgreSQL: DATABASE_URL env var
 //   2. Docker Compose / Remote SQL Server: ConnectionStrings__Default with non-localhost server
@@ -141,6 +153,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
