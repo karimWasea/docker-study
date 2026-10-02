@@ -12,6 +12,13 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+});
+
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -26,12 +33,6 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
     });
-    builder.Logging.ClearProviders();
-    builder.Logging.AddJsonConsole(options =>
-    {
-        options.IncludeScopes = true;
-        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
-    });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -44,6 +45,18 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 builder.Services.AddProblemDetails();
+
+// Enable CORS for Angular frontend running on port 4200
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 // Auto-detect database provider:
 //   1. Railway / Cloud PostgreSQL: DATABASE_URL env var
@@ -141,6 +154,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

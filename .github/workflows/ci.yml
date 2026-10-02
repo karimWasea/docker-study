@@ -2,7 +2,7 @@
 # 🔄 CI Pipeline — GitHub Actions
 # ============================================================
 # This workflow runs automatically on every push/PR to main.
-# It validates the code compiles and the Docker image builds.
+# It validates both Backend (.NET 8) and Frontend (Angular 22).
 # ============================================================
 
 name: CI Pipeline
@@ -31,12 +31,16 @@ jobs:
 
       # ── Step 3: Download NuGet packages ──
       - name: 📦 Restore dependencies
-        run: dotnet restore
+        run: dotnet restore docker-study.sln
 
       # ── Step 4: Compile the project ──
-      - name: 🔨 Build
-        run: dotnet build --no-restore --configuration Release
+      - name: 🔨 Build Backend
+        run: dotnet build docker-study.sln --no-restore --configuration Release
 
-      # ── Step 5: Build Docker image ──
-      - name: 🐳 Build Docker image
+      # ── Step 5: Build Backend Docker image ──
+      - name: 🐳 Build Backend Docker image
         run: docker build -t lab8-api:ci .
+
+      # ── Step 6: Build Frontend Docker image ──
+      - name: 🌐 Build Frontend Docker image
+        run: docker build -t lab8-frontend:ci ./frontend
