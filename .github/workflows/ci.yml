@@ -41,6 +41,18 @@ jobs:
       - name: 🐳 Build Backend Docker image
         run: docker build -t lab8-api:ci .
 
-      # ── Step 6: Build Frontend Docker image ──
-      - name: 🌐 Build Frontend Docker image
+      # ── Step 6: Setup Node.js & Build Frontend ──
+      - name: 🌐 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 📦 Build Frontend
+        run: |
+          cd frontend
+          npm install --legacy-peer-deps
+          npm run build
+
+      # ── Step 7: Build Frontend Docker image ──
+      - name: 🐳 Build Frontend Docker image
         run: docker build -t lab8-frontend:ci ./frontend
