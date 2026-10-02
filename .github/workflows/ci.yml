@@ -31,11 +31,11 @@ jobs:
 
       # ── Step 3: Download NuGet packages ──
       - name: 📦 Restore dependencies
-        run: dotnet restore
+        run: dotnet restore docker-study.sln
 
       # ── Step 4: Compile the project ──
       - name: 🔨 Build Backend
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build docker-study.sln --no-restore --configuration Release
 
       # ── Step 5: Build Backend Docker image ──
       - name: 🐳 Build Backend Docker image
